@@ -1,47 +1,37 @@
+
+
+
 function HTTP_URL(href) {
-    var self = this;
+    var data = {
+        href: null,
+        origin: null,
+        protocol: null,
+        host: null,
+        hostname: null,
+        port: null,
+        pathname: null,
+        paths: null,
+        hash: null,
+        queryString: null,
+        queryParams: null
+    }
+
     var regex = /^(((https?\:)\/\/)?(([^:\/?#]*)(?:\:([0-9]+))?))?([\/]?[^?#]*)(\?[^#]*|)(#.*|)$/;
+    /*
+        ^(
+            (
+                (https?\:)\/\/
+            )?
+            (
+                ([^:\/?#]*)
+                (?:\:([0-9]+))?
+            )
+        )?
+        ([\/]?[^?#]*)
+        (\?[^#]*|)
+        (#.*|)$
+    */
 
-    function SetValues(href) {
-        var match = href.match(regex);
-        this.href = href;
-        if( match ) {
-            this.origin = match[1];
-            this.protocol = match[3];
-            this.host = match[4];
-            this.hostname = match[5];
-            this.port = match[6];
-            this.pathname = match[7];
-            this.paths = ParsePath(this.pathname);
-            this.hash = match[9];
-
-            SetSearchParams(match[8]);
-        }
-    }
-
-    function UpdateHref() {
-        var href = '';
-        if( this.hostname ) {
-            if( this.protocol ) href += this.protocol + '//';
-            href += this.hostname;
-            if( this.port ) href += this.port;
-        }
-        if( this.pathname ) href += this.pathname;
-        if( this.search ) href += this.search;
-        if( this.hash ) href += this.hash;
-        this.href = href;
-    }
-
-    function SetSearchParams(search) {
-        self.search = search;
-        self.queryParams = {};
-        search.trim().replace(/^\?/,'').split('&').map(function(param){
-            var p = param.split('=').map(function(a){ return a.trim() });
-            if( typeof(p[0]) == typeof('') && p[0] !== '' && typeof(p[1]) == typeof('') && p[1] !== '') {
-                self.queryParams[decodeURIComponent(p[0])] = decodeURIComponent(p[1]);
-            }
-        });
-    }
 
     function ParsePath(path) {
         return path.split('/').map(function(a){
@@ -51,139 +41,108 @@ function HTTP_URL(href) {
         });
     }
 
-    function RefreshSearchQuery() {
-        self.search = '';
-        for(var k in self.queryParams) {
-            self.search += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(self.queryParams[k]);
-        }
-        self.search = self.search.replace(/^&/,'?');
-        UpdateHref.call(this);
-    }
-
-    this.setParam = function(key, value) {
-        this.queryParams[key] = value;
-        RefreshSearchQuery();
-    }
-
-    this.removeParam = function(key) {
-        delete this.queryParams[key];
-        RefreshSearchQuery();
-    }
-
-    this.set = function(key, value) {
-        var validKeys = ['hash', 'hostname', 'protocol', 'port'];
-        if( 0 <= validKeys.indexOf(key) ) {
-            this[key] = value;
-        }
-    }
-
-    this.setHref = function(href) {
-        SetValues.call(this, href);
-    }
-
-    SetValues.call(this, href || window.location.href);
-}
-
-
-function OLD_HTTP_URL(href) {
-    var self = this;
-    var regex = /^(((https?\:)\/\/)?(([^:\/?#]*)(?:\:([0-9]+))?))?([\/]?[^?#]*)(\?[^#]*|)(#.*|)$/;
-
-    function SetValues(href) {
-        var match = href.match(regex);
-        this.href = href;
-        if( match ) {
-            this.origin = match[1];
-            this.protocol = match[3];
-            this.host = match[4];
-            this.hostname = match[5];
-            this.port = match[6];
-            this.pathname = match[7];
-            this.paths = ParsePath(this.pathname);
-            this.hash = match[9];
-
-            SetSearchParams(match[8]);
-        }
-    }
-
-    function UpdateHref() {
-        var href = '';
-        if( this.hostname ) {
-            if( this.protocol ) href += this.protocol + '//';
-            href += this.hostname;
-            if( this.port ) href += this.port;
-        }
-        if( this.pathname ) href += this.pathname;
-        if( this.search ) href += this.search;
-        if( this.hash ) href += this.hash;
-        this.href = href;
-    }
-
-    function SetSearchParams(search) {
-        self.search = search;
-        self.queryParams = {};
+    function GetSearchParams(search) {
+        var queryParams = {};
         search.trim().replace(/^\?/,'').split('&').map(function(param){
             var p = param.split('=').map(function(a){ return a.trim() });
             if( typeof(p[0]) == typeof('') && p[0] !== '' && typeof(p[1]) == typeof('') && p[1] !== '') {
-                self.queryParams[decodeURIComponent(p[0])] = decodeURIComponent(p[1]);
+                queryParams[decodeURIComponent(p[0])] = decodeURIComponent(p[1]);
             }
         });
+        return queryParams;
     }
 
-    function ParsePath(path) {
-        return path.split('/').map(function(a){
-            return a.trim();
-        }).filter(function(a){
-            return a !== '';
-        });
-    }
+    function SetValuesWithHref(href) {
+        var match = href.match(regex);
+        data.href = href;
+        if( match ) {
+            data.origin = match[1];
+            data.protocol = match[3];
+            data.host = match[4];
+            data.hostname = match[5];
+            data.port = match[6];
 
-    function RefreshSearchQuery() {
-        self.search = '';
-        for(var k in self.queryParams) {
-            self.search += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(self.queryParams[k]);
-        }
-        self.search = self.search.replace(/^&/,'?');
-        UpdateHref.call(this);
-    }
+            data.pathname = match[7];
+            data.paths = ParsePath(data.pathname);
 
-    this.setParam = function(key, value) {
-        this.queryParams[key] = value;
-        RefreshSearchQuery.call(this);
-    }
+            data.hash = match[9];
 
-    this.removeParam = function(key) {
-        delete this.queryParams[key];
-        RefreshSearchQuery.call(this);
-    }
-
-    this.set = function(key, value) {
-        var validKeys = ['hash', 'hostname', 'protocol', 'port'];
-        if( 0 <= validKeys.indexOf(key) ) {
-            this[key] = value;
+            data.queryString = match[8];
+            data.queryParams = GetSearchParams(data.queryString);
         }
     }
 
-    this.setHash = function(hash) {
-        this.hash = hash;
-        UpdateHref.call(this);
+    function SetHrefWithValues() {
+        var href = '';
+        if( data.hostname ) {
+            if( data.protocol ) href += data.protocol + '//';
+            href += data.hostname;
+            if( data.port ) href += data.port;
+        }
+        if( data.pathname ) href += data.pathname;
+        if( data.search ) href += data.search;
+        if( data.hash ) href += data.hash;
+        data.href = href;
     }
 
-    this.setHref = function(href) {
-        SetValues.call(this, href);
+
+    var objectData = {
+        get href() { return data.href; },
+        get origin() { return data.origin; },
+        get protocol() { return data.protocol; },
+        get host() { return data.host; },
+        get hostname() { return data.hostname; },
+        get port() { return data.port; },
+        get pathname() { return data.pathname; },
+        get paths() { return data.paths; },
+        get hash() { return data.hash; },
+        get queryString() { return data.queryString; },
+        get queryParams() { return data.queryParams; },
+
+        set href(val) { 
+            // Update all values
+            SetValuesWithHref(val);
+        },
+        set origin(val) { 
+            // Update protocol, host, hostname, port, href
+            data.origin = origin;
+        },
+        set protocol(val) { 
+            // Update origin, href
+        },
+        set host(val) { 
+            // Update hostname, port, origin, href
+        },
+        set hostname(val) { 
+            // Update host, origin, href
+        },
+        set port(val) { 
+            // Update host, origin, href
+            data.port = val;
+            SetHrefWithValues();
+        },
+        set pathname(val) { 
+            // Update pathname, href
+            data.pathname = val;
+        },
+        set paths(val) {
+            // Update pathname, href
+            data.paths = val;
+        },
+        set hash(val) { 
+            // Update href
+            data.hash = val;
+            SetHrefWithValues();
+        },
+        set queryString(val) { 
+            // Update queryParams, href
+        },
+        set queryParams(val) { 
+            // Update queryString, href
+        }
     }
 
-    var href = {
+    objectData.href = href || window.location.href;
 
-    }
-
-    SetValues.call(this, href || window.location.href);
+    return objectData;
 }
-
-
-
-
-
-
-
-
